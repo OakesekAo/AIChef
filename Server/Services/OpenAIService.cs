@@ -1,6 +1,10 @@
 ﻿using AIChef.Server.Models;
 using AIChef.Shared;
+using System.Linq.Expressions;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace AIChef.Server.Services
 {
@@ -8,7 +12,7 @@ namespace AIChef.Server.Services
     {
         private readonly IConfiguration _configuration;
         private static readonly string _baseUrl = "http://api.openai.com/v1/";
-        private static readonly HttpClient _httpCient = new();
+        private static readonly HttpClient _httpClient = new();
         private readonly JsonSerializerOptions _jsonOptions;
 
         //build the function object so that AI will return JSON formatted object
@@ -61,12 +65,97 @@ namespace AIChef.Server.Services
             }
         };
 
-
-
-
-        public Task<List<Idea>> CreateRecipeideas(string mealtime, List<string> ingredients)
+        public OpenAIService(IConfiguration configuration)
         {
-            throw new NotImplementedException();
+
+            _configuration = configuration;
+            var apiKey = _configuration["OpenAi:OpenAiKey"] ?? Environment.GetEnvironmentVariable("OpenAiKey");
+
+            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            _httpClient.DefaultRequestHeaders.Authorization = new("Bearer", apiKey);
+
+            _jsonOptions = new()
+            {
+                PropertyNameCaseInsensitive = true,
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+            };
+        }
+
+
+        public async Task<List<Idea>> CreateRecipeideas(string mealtime, List<string> ingredientList)
+        {
+            string url = $"{_baseUrl}chat/completions";
+            string systemPrompt = "You are a world-renowned chef. I will send you a list of ingredients and a meal time. you will respond with 5 ideas for dishes.";
+            string userPrompt = "";
+            string ingredientPrompt = "";
+
+            string ingerdients = string.Join(",", ingredientList);
+
+            if (string.IsNullOrEmpty(ingerdients))
+            {
+                ingredientPrompt = "Suggest some ingredients for me";
+            }
+            else
+            {
+                ingredientPrompt = $"I have {ingerdients}";
+            }
+
+            userPrompt = $"The meal I want to cook is {mealtime}. {ingredientPrompt}";
+
+            ChatMessage systemMessagge = new()
+            {
+                Role = "system",
+                Content = $"{systemPrompt}"
+            };
+            ChatMessage userMessage = new()
+            {
+                Role = "user",
+                Content = $"{userPrompt}"
+            };
+
+            ChatRequest request = new()
+            {
+                Model = "gpt-3.5-turbo-0613",
+                Messages = new[] { systemMessagge, userMessage },
+                Functions = new[] { _ideaFunction },
+                FunctionCall = new {Name = _ideaFunction.Name}
+            };
+
+            HttpResponseMessage httpResponse = await _httpClient.PostAsJsonAsync(url, request, _jsonOptions);
+
+            ChatResponse? response = await httpResponse.Content.ReadFromJsonAsync<ChatResponse>();
+
+
+            //get the first message in the function
+            ChatFunctionResponse? functionResponse = response.Choices
+                                                            .FirstOrDefault(m => m.Message?.FunctionCall is not null)?
+                                                            .Message?
+                                                            .FunctionCall;
+
+            Result<List<Idea>>? ideasResult = new();
+
+            if(functionResponse?.Arguments is not null)
+            {
+                try
+                {
+                    ideasResult = JsonSerializer.Deserialize<Result<List<Idea>>>(functionResponse.Arguments, _jsonOptions);
+                }
+                catch (Exception ex)
+                {
+
+                    ideasResult = new()
+                    {
+                        Exception = ex,
+                        ErrorMessage = await httpResponse.Content.ReadAsStringAsync()
+                    };
+                }
+            }
+
+            return ideasResult?.Data ?? new List<Idea>();
+          
+
+       
         }
     }
 }
