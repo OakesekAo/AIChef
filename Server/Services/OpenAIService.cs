@@ -11,7 +11,7 @@ namespace AIChef.Server.Services
     public class OpenAIService : IOpenAIAPI
     {
         private readonly IConfiguration _configuration;
-        private static readonly string _baseUrl = "http://api.openai.com/v1/";
+        private static readonly string _baseUrl = "https://api.openai.com/v1/";
         private static readonly HttpClient _httpClient = new();
         private readonly JsonSerializerOptions _jsonOptions;
 
@@ -67,7 +67,6 @@ namespace AIChef.Server.Services
 
         public OpenAIService(IConfiguration configuration)
         {
-
             _configuration = configuration;
             var apiKey = _configuration["OpenAi:OpenAiKey"] ?? Environment.GetEnvironmentVariable("OpenAiKey");
 
