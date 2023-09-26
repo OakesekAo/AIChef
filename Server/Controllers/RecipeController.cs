@@ -40,13 +40,29 @@ namespace AIChef.Server.Controllers
         [HttpPost, Route("GetRecipe")]
         public async Task<ActionResult<Recipe?>> GetRecipe(RecipeParms recipeParms)
         {
-            return SampleData.Recipe;
+            List<string> ingredients = recipeParms.Ingredients
+                                                    .Where(x => !string.IsNullOrEmpty(x.Description))
+                                                    .Select(x => x.Description)
+                                                    .ToList();
+            string? title = recipeParms.SelectedIdea;
+
+            if(string.IsNullOrEmpty(title))
+            {
+                return BadRequest();
+            }
+
+            var recipe = await _openAIService.CreateRecipe(title, ingredients);
+            return recipe;
         }
 
         [HttpGet, Route("GetRecipeImage")]
         public async Task<RecipeImage> GetRecipeImage(string title)
         {
-            return SampleData.RecipeImage;
+            var recipeImage = await _openAIService.CreateRecipeImage(title);
+
+            return recipeImage ?? SampleData.RecipeImage;
+
+            
         }
 
     }
