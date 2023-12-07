@@ -1,13 +1,13 @@
 ﻿.page {
-    background-image: url('images/aichefbg2.png');
-    background-repeat:no-repeat;
-    background-position:center;
-    background-size:cover;
-    overflow:hidden;
-    display:flex;
-    flex-direction:column;
-    height:100%;
-    color:var(--bs-light);
+    background-image: url('images/AIChefBG2.png');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: cover;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    color: var(--bs-light);
     font-size: 1.2rem;
 }
 
