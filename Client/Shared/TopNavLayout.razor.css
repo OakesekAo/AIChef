@@ -7,3 +7,25 @@ footer{
     flex-shrink: 0;
     background-color:var(--bs-success-bg-subtle);
 }
+.page-footer {
+    color: var(--bs-dark);
+    font-size: 1.2rem;
+}
+
+.pagestyle-footer {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+a {
+    color: var(--bs-dark);
+    text-decoration: none;
+}
+
+    a:visited {
+        color: var(--bs-dark);
+    }
+
+    a:hover {
+        cursor: pointer;
+    }
